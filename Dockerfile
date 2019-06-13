@@ -18,15 +18,15 @@ ENV GOPROXY https://proxy.golang.org
 RUN go mod download
 RUN go build -installsuffix cgo \
   -ldflags="-w -s" \
-  -o /go/bin/fallback-server \
-  ./cmd/fallback-server
+  -o /go/bin/fallback-proxy \
+  ./cmd/fallback-proxy
 
 # Start a fresh image, and only copy the built binary.
 FROM scratch
-COPY --from=builder /go/bin/fallback-server /go/bin/fallback-server
+COPY --from=builder /go/bin/fallback-proxy /go/bin/fallback-proxy
 
 # Expose port
 EXPOSE 1337
 
 # Run the server.
-ENTRYPOINT ["/go/bin/fallback-server"]
+ENTRYPOINT ["/go/bin/fallback-proxy"]
