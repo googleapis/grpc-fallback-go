@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
@@ -17,20 +18,22 @@ const (
 // the default HTTP client, crafts the URL based on the address,
 // fully qualified name of the gRPC Service and the Method name.
 // The given request protobuf is serialized and used as the payload.
-func Do(address, serv, meth string, msg proto.Message, hdr http.Header) (*http.Response, error) {
+// A successful response is deserialized into the given response proto.
+// A non-2xx response status is returned as an error.
+func Do(address, serv, meth string, req, res proto.Message, hdr http.Header) error {
 	// serialize msg payload
-	b, err := proto.Marshal(msg)
+	b, err := proto.Marshal(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	body := bytes.NewReader(b)
 
 	// build request URL
 	url := buildURL(address, serv, meth)
 
-	req, err := http.NewRequest("POST", url, body)
+	request, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// force content-type header
@@ -39,9 +42,23 @@ func Do(address, serv, meth string, msg proto.Message, hdr http.Header) (*http.R
 	}
 	hdr.Set(ct, typ)
 
-	req.Header = hdr
+	request.Header = hdr
 
-	return http.DefaultClient.Do(req)
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+
+	resBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("%s: %s", response.Status, string(resBody))
+	}
+
+	return proto.Unmarshal(resBody, res)
 }
 
 func buildURL(address, service, method string) string {

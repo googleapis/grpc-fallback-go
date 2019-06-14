@@ -48,24 +48,21 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 
-	"github.com/golang/protobuf/proto"
 	showpb "github.com/googleapis/gapic-showcase/server/genproto"
 	"github.com/googleapis/grpc-fallback-go/client"
 )
 
 func main() {
-	req := &showpb.EchoRequest{Response: &showpb.EchoRequest_Content{"Hello, World!"}}
-	r, err := client.Do("http://localhost:1337", "google.showcase.v1beta1.Echo", "Echo", req, nil)
+	req := &showpb.EchoRequest{Response: &showpb.EchoRequest_Content{"testing"}}
+	res := &showpb.EchoResponse{}
+
+	err := client.Do("http://localhost:1337", "google.showcase.v1beta1.Echo", "Echo", req, res, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	b, _ := ioutil.ReadAll(r.Body)
-	res := &showpb.EchoResponse{}
-	proto.Unmarshal(b, res)
-
 	fmt.Println(res)
 }
+
 ```
