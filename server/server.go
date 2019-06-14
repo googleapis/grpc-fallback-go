@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 
 	"google.golang.org/grpc"
@@ -88,14 +89,16 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 	err := f.cc.Invoke(ctx, m, r.Body, w)
 	if err != nil {
 		code := 500
+		b := []byte(err.Error())
 
 		// handle gRPC specific errors
 		if st, ok := status.FromError(err); ok {
 			code = httpStatusFromCode(st.Code())
+			b, _ = proto.Marshal(st.Proto())
 		}
 
 		w.WriteHeader(code)
-		w.Write([]byte(err.Error()))
+		w.Write(b)
 	}
 }
 
