@@ -128,11 +128,5 @@ func (f *FallbackServer) dial() (*grpc.ClientConn, error) {
 	}
 	opts = append(opts, auth)
 
-	cc, err := grpc.Dial(f.backend, opts...)
-	if err != nil {
-		log.Printf("Error dialing gRPC backend at %s: %v\n", f.backend, err)
-		return nil, err
-	}
-
-	return cc, nil
+	return grpc.Dial(f.backend, opts...)
 }
