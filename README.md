@@ -22,7 +22,7 @@ s := grpc.NewServer(opts...)
 
 // Create a new grpc-fallback server on port 1337
 // for gRPC server listening on "port"
-fb := fallback.NewServer(":1337", port)
+fb := fallback.NewServer(":1337", "localhost"+port)
 fb.StartBackground()
 defer fb.Shutdown()
 
