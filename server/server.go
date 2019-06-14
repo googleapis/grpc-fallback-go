@@ -2,8 +2,6 @@ package server
 
 import (
 	"context"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -78,11 +76,13 @@ func (f *FallbackServer) Shutdown() {
 func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Incoming grpc-fallback request:", r.RequestURI)
 	v := mux.Vars(r)
-	service := v["service"]
-	method := v["method"]
 
-	// invoke the desired RPC
-	err := f.invoke(r.Body, w, service, method)
+	// craft service-method path
+	m := buildMethod(v["service"], v["method"])
+
+	// invoke the RPC, supplying the request body
+	// and response writer directly
+	err := f.cc.Invoke(context.Background(), m, r.Body, w)
 	if err != nil {
 		code := 500
 
@@ -96,29 +96,12 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// invoke buffers the request payload, invokes the RPC, and
-// writes a succesful response to the given io.Writer.
-func (f *FallbackServer) invoke(in io.Reader, out io.Writer, service, method string) error {
-	res := &[]byte{}
-	req, err := ioutil.ReadAll(in)
-	if err != nil {
-		return err
-	}
-
-	err = f.cc.Invoke(context.Background(), buildMethod(service, method), req, res)
-	if err != nil {
-		return err
-	}
-
-	_, err = out.Write(*res)
-
-	return err
-}
-
 // dial creates a connection with the gRPC service backend.
+//
+// TODO(ndietz) backend auth support
 func (f *FallbackServer) dial() (*grpc.ClientConn, error) {
 	opts := []grpc.DialOption{
-		grpc.WithDefaultCallOptions(grpc.ForceCodec(rawCodec{})),
+		grpc.WithDefaultCallOptions(grpc.ForceCodec(fallbackCodec{})),
 	}
 
 	// default to basic CA, use insecure if on localhost
