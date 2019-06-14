@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"google.golang.org/grpc/status"
+
+	statuspb "google.golang.org/genproto/googleapis/rpc/status"
+
 	"github.com/golang/protobuf/proto"
 )
 
@@ -19,7 +23,8 @@ const (
 // fully qualified name of the gRPC Service and the Method name.
 // The given request protobuf is serialized and used as the payload.
 // A successful response is deserialized into the given response proto.
-// A non-2xx response status is returned as an error.
+// A non-2xx response status is returned as an error containing the
+// underlying gRPC status.
 func Do(address, serv, meth string, req, res proto.Message, hdr http.Header) error {
 	// serialize msg payload
 	b, err := proto.Marshal(req)
@@ -55,7 +60,14 @@ func Do(address, serv, meth string, req, res proto.Message, hdr http.Header) err
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s: %s", response.Status, string(resBody))
+		stpb := &statuspb.Status{}
+		if err := proto.Unmarshal(resBody, stpb); err != nil {
+			return err
+		}
+
+		st := status.FromProto(stpb)
+
+		return st.Err()
 	}
 
 	return proto.Unmarshal(resBody, res)
