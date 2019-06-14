@@ -66,3 +66,46 @@ func main() {
 }
 
 ```
+
+## Client w/auth Usage Example
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/googleapis/grpc-fallback-go/client"
+
+	lpb "google.golang.org/genproto/googleapis/cloud/language/v1"
+	"golang.org/x/oauth2/google"
+)
+
+func main() {
+	hdr := make(http.Header)
+	ts, _ := google.DefaultTokenSource(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+	t, _ := ts.Token()
+	hdr.Add("Authorization", "Bearer "+t.AccessToken)
+
+	req := &lpb.AnalyzeSentimentRequest{
+		Document: &lpb.Document{
+			Type:   lpb.Document_PLAIN_TEXT,
+			Source: &lpb.Document_Content{"hello, world"},
+		},
+	}
+	res := &lpb.AnalyzeSentimentResponse{}
+	
+
+	// fallback-proxy is pointing at -address language.googleapis.com:443
+	err := client.Do("http://localhost:1337", "google.cloud.language.v1.LanguageService", "AnalyzeSentiment", req, res, hdr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(res)
+}
+
+```
