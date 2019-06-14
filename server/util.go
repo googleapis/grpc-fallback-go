@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"google.golang.org/grpc/codes"
@@ -49,4 +50,8 @@ func httpStatusFromCode(code codes.Code) int {
 	}
 
 	return http.StatusInternalServerError
+}
+
+func buildMethod(service, method string) string {
+	return fmt.Sprintf("/%s/%s", service, method)
 }

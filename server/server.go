@@ -8,96 +8,44 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/dynamic"
-	gdyn "github.com/jhump/protoreflect/dynamic/grpcdynamic"
-	gref "github.com/jhump/protoreflect/grpcreflect"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	rpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
 
 // FallbackServer is a grpc-fallback HTTP server
 type FallbackServer struct {
-	addr     string
-	server   http.Server
-	services map[string]desc.ServiceDescriptor
-	stub     *gdyn.Stub
-	remote   bool
+	backend string
+	server  http.Server
+	cc      *grpc.ClientConn
 }
 
 // NewServer creates a new grpc-fallback HTTP server on the
-// given port. On start, it will configure itself via gRPC
-// reflect against the gRPC server located at addr.
-func NewServer(port, addr string) *FallbackServer {
+// given port that proxies to the given gRPC server backend.
+func NewServer(port, backend string) *FallbackServer {
 	if !strings.HasPrefix(port, ":") {
 		port = ":" + port
 	}
 
 	return &FallbackServer{
-		addr:   addr,
-		remote: true,
+		backend: backend,
 		server: http.Server{
 			Addr: port,
 		},
-		services: make(map[string]desc.ServiceDescriptor),
 	}
 }
 
-// NewServerInProcess creates a new grpc-fallback HTTP server on the
-// given port. It acts as a reverse-proxy for the given in-process gRPC
-// Server located on localhost:{grpcPort}.
-func NewServerInProcess(port, grpcPort string, gServer *grpc.Server) *FallbackServer {
-	if !strings.HasPrefix(port, ":") {
-		port = ":" + port
-	}
-
-	if !strings.HasPrefix(grpcPort, ":") {
-		grpcPort = ":" + grpcPort
-	}
-
-	sds, err := gref.LoadServiceDescriptors(gServer)
-	if err != nil {
-		log.Fatal("Error initializing service descriptor references:", err)
-	}
-
-	services := make(map[string]desc.ServiceDescriptor)
-	for _, d := range sds {
-		services[d.GetFullyQualifiedName()] = *d
-	}
-
-	return &FallbackServer{
-		addr: "localhost" + grpcPort,
-		server: http.Server{
-			Addr: port,
-		},
-		services: services,
-	}
-}
-
-// Start starts the grpc-fallback HTTP server listening on its port.
-// A connection is open to the gRPC backend and, if remote, the
-// service list is reflected.
+// Start starts the grpc-fallback HTTP server listening on its port,
+// and opens a connection to the gRPC backend.
 func (f *FallbackServer) Start() {
+	var err error
+
 	// setup connection to gRPC backend
-	cc, err := f.dial()
+	f.cc, err = f.dial()
 	if err != nil {
 		log.Fatal("Error dialing gRPC backend server:", err)
-	}
-
-	// init dynamic gRPC client
-	s := gdyn.NewStub(cc)
-	f.stub = &s
-
-	// reflect gRPC Service list
-	if f.remote {
-		if err := f.reflectServices(cc); err != nil {
-			log.Fatal("Error configuring against reflection server:", err)
-		}
 	}
 
 	// setup grpc-fallback complient router
@@ -133,14 +81,8 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 	service := v["service"]
 	method := v["method"]
 
-	sd, ok := f.services[service]
-	if !ok || sd.FindMethodByName(method) == nil {
-		w.WriteHeader(404)
-		return
-	}
-
 	// invoke the desired RPC
-	err := f.invoke(r.Body, w, sd.FindMethodByName(method))
+	err := f.invoke(r.Body, w, service, method)
 	if err != nil {
 		code := 500
 
@@ -154,82 +96,59 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// invoke deserializes the request payload, invokes the RPC, and
+// invoke buffers the request payload, invokes the RPC, and
 // writes a succesful response to the given io.Writer.
-func (f *FallbackServer) invoke(in io.Reader, out io.Writer, md *desc.MethodDescriptor) error {
-	data, err := ioutil.ReadAll(in)
+func (f *FallbackServer) invoke(in io.Reader, out io.Writer, service, method string) error {
+	res := &[]byte{}
+	req, err := ioutil.ReadAll(in)
 	if err != nil {
 		return err
 	}
 
-	inDyn := dynamic.NewMessage(md.GetInputType())
-	err = inDyn.Unmarshal(data)
+	err = f.cc.Invoke(context.Background(), buildMethod(service, method), req, res)
 	if err != nil {
 		return err
 	}
 
-	res, err := f.stub.InvokeRpc(context.Background(), md, inDyn)
-	if err != nil {
-		return err
-	}
+	_, err = out.Write(*res)
 
-	d, err := proto.Marshal(res)
-	if err != nil {
-		return err
-	}
-
-	out.Write(d)
-
-	return nil
+	return err
 }
 
 // dial creates a connection with the gRPC service
 // backend.
 func (f *FallbackServer) dial() (*grpc.ClientConn, error) {
-	opts := []grpc.DialOption{}
+	opts := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(grpc.ForceCodec(rawCodec{})),
+	}
 
 	// default to basic CA, use insecure if on localhost
 	auth := grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, ""))
-	if strings.Contains(f.addr, "localhost") || strings.Contains(f.addr, "127.0.0.1") {
+	if strings.Contains(f.backend, "localhost") || strings.Contains(f.backend, "127.0.0.1") {
 		auth = grpc.WithInsecure()
 	}
 	opts = append(opts, auth)
 
-	cc, err := grpc.Dial(f.addr, opts...)
+	cc, err := grpc.Dial(f.backend, opts...)
 	if err != nil {
-		log.Printf("Error dialing gRPC backend at %s: %v\n", f.addr, err)
+		log.Printf("Error dialing gRPC backend at %s: %v\n", f.backend, err)
 		return nil, err
 	}
 
 	return cc, nil
 }
 
-// reflectServices uses a gRPC reflection client to list
-// the services avilable on the gRPC backend and configure
-// the grpc-fallback proxy.
-func (f *FallbackServer) reflectServices(cc *grpc.ClientConn) error {
-	// setup reflection client, cancel it when done
-	ctx, cf := context.WithCancel(context.Background())
-	defer cf()
+type rawCodec struct{}
 
-	refStub := rpb.NewServerReflectionClient(cc)
-	refc := gref.NewClient(ctx, refStub)
+func (rawCodec) Marshal(v interface{}) ([]byte, error) {
+	return v.([]byte), nil
+}
 
-	servs, err := refc.ListServices()
-	if err != nil {
-		return err
-	}
-
-	// gather service descriptors
-	for _, s := range servs {
-		sdesc, err := refc.ResolveService(s)
-		if err != nil {
-			return err
-		}
-
-		f.services[s] = *sdesc
-		log.Println("Adding service:", s)
-	}
-
+func (rawCodec) Unmarshal(data []byte, v interface{}) error {
+	*(v.(*[]byte)) = data
 	return nil
+}
+
+func (rawCodec) Name() string {
+	return "raw"
 }
