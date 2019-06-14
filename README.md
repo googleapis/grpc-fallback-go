@@ -56,7 +56,7 @@ import (
 )
 
 func main() {
-	req := &showpb.EchoRequest{Response: &show.EchoRequest_Content{"Hello, World!"}}
+	req := &showpb.EchoRequest{Response: &showpb.EchoRequest_Content{"Hello, World!"}}
 	r, err := client.Do("http://localhost:1337", "google.showcase.v1beta1.Echo", "Echo", req, nil)
 	if err != nil {
 		panic(err)
