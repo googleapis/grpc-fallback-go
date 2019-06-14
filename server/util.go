@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 // httpStatusFromCode converts a gRPC error code into the corresponding HTTP response status.
@@ -54,4 +56,19 @@ func httpStatusFromCode(code codes.Code) int {
 
 func buildMethod(service, method string) string {
 	return fmt.Sprintf("/%s/%s", service, method)
+}
+
+func prepareHeaders(ctx context.Context, hdr http.Header) context.Context {
+	out, _ := metadata.FromOutgoingContext(ctx)
+	out = out.Copy()
+
+	// delete application/x-protobuf content-type
+	hdr.Del("content-type")
+
+	// keep every other header
+	for key, val := range hdr {
+		out[key] = append(out[key], val...)
+	}
+
+	return metadata.NewOutgoingContext(ctx, out)
 }

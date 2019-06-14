@@ -80,9 +80,12 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 	// craft service-method path
 	m := buildMethod(v["service"], v["method"])
 
+	// copy headers into out-going context metadata
+	ctx := prepareHeaders(context.Background(), r.Header)
+
 	// invoke the RPC, supplying the request body
 	// and response writer directly
-	err := f.cc.Invoke(context.Background(), m, r.Body, w)
+	err := f.cc.Invoke(ctx, m, r.Body, w)
 	if err != nil {
 		code := 500
 
