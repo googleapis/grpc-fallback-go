@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// FallbackServer is a grpc-fallback HTTP server
+// FallbackServer is a grpc-fallback HTTP server.
 type FallbackServer struct {
 	backend string
 	server  http.Server
@@ -60,12 +60,12 @@ func (f *FallbackServer) Start() {
 	}
 }
 
-// StartBackground runs Start() in a goroutine
+// StartBackground runs Start() in a goroutine.
 func (f *FallbackServer) StartBackground() {
 	go f.Start()
 }
 
-// Shutdown turns down the grpc-fallback HTTP server
+// Shutdown turns down the grpc-fallback HTTP server.
 func (f *FallbackServer) Shutdown() {
 	err := f.server.Shutdown(context.Background())
 	if err != nil {
@@ -115,8 +115,7 @@ func (f *FallbackServer) invoke(in io.Reader, out io.Writer, service, method str
 	return err
 }
 
-// dial creates a connection with the gRPC service
-// backend.
+// dial creates a connection with the gRPC service backend.
 func (f *FallbackServer) dial() (*grpc.ClientConn, error) {
 	opts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.ForceCodec(rawCodec{})),
@@ -136,19 +135,4 @@ func (f *FallbackServer) dial() (*grpc.ClientConn, error) {
 	}
 
 	return cc, nil
-}
-
-type rawCodec struct{}
-
-func (rawCodec) Marshal(v interface{}) ([]byte, error) {
-	return v.([]byte), nil
-}
-
-func (rawCodec) Unmarshal(data []byte, v interface{}) error {
-	*(v.(*[]byte)) = data
-	return nil
-}
-
-func (rawCodec) Name() string {
-	return "raw"
 }
