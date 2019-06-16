@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -166,6 +167,61 @@ func TestFallbackServer_handler(t *testing.T) {
 
 			if !reflect.DeepEqual(resp.buf, tt.wantBody) {
 				t.Errorf("handler() %s: got = %s, want = %s", tt.name, resp.buf, tt.wantBody)
+			}
+		})
+	}
+}
+
+func TestFallbackServer_dial(t *testing.T) {
+	tests := []struct {
+		backend string
+		name    string
+		want    string
+		wantErr bool
+	}{
+		{name: "basic localhost", backend: "localhost:1234", want: "localhost:1234"},
+		{name: "basic non-local", backend: "test.api.dev:443", want: "test.api.dev:443"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &FallbackServer{
+				backend: tt.backend,
+			}
+			got, err := f.dial()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FallbackServer.dial() %s error = %v, wantErr = %v", tt.name, err, tt.wantErr)
+				return
+			}
+
+			gotTarget := got.(*grpc.ClientConn).Target()
+			if gotTarget != tt.want {
+				t.Errorf("FallbackServer.dial() %s target: got = %v, want = %v", tt.name, gotTarget, tt.want)
+			}
+		})
+	}
+}
+
+func TestFallbackServer_preStart(t *testing.T) {
+	type fields struct {
+		backend string
+		server  http.Server
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{name: "basic", fields: fields{backend: "localhost:1234", server: http.Server{}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &FallbackServer{
+				backend: tt.fields.backend,
+				server:  tt.fields.server,
+			}
+			f.preStart()
+
+			if _, ok := f.server.Handler.(*mux.Router); !ok {
+				t.Errorf("FallbackServer.preStart() %s handler: got = %v, want = mux.Router", tt.name, f.server.Handler)
 			}
 		})
 	}

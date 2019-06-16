@@ -45,6 +45,21 @@ func NewServer(port, backend string) *FallbackServer {
 // Start starts the grpc-fallback HTTP server listening on its port,
 // and opens a connection to the gRPC backend.
 func (f *FallbackServer) Start() {
+	// setup connection and handler
+	f.preStart()
+
+	log.Println("Fallback server listening on port:", f.server.Addr)
+	if err := f.server.ListenAndServe(); err != nil {
+		log.Println("Error in fallback server while listening:", err)
+	}
+}
+
+// StartBackground runs Start() in a goroutine.
+func (f *FallbackServer) StartBackground() {
+	go f.Start()
+}
+
+func (f *FallbackServer) preStart() {
 	var err error
 
 	// setup connection to gRPC backend
@@ -57,17 +72,6 @@ func (f *FallbackServer) Start() {
 	r := mux.NewRouter()
 	r.HandleFunc("/$rpc/{service:[.a-zA-Z0-9]+}/{method:[a-zA-Z]+}", f.handler).Headers("Content-Type", "application/x-protobuf")
 	f.server.Handler = r
-
-	log.Println("Fallback server listening on port:", f.server.Addr)
-	err = f.server.ListenAndServe()
-	if err != nil {
-		log.Println("Error in fallback server while listening:", err)
-	}
-}
-
-// StartBackground runs Start() in a goroutine.
-func (f *FallbackServer) StartBackground() {
-	go f.Start()
 }
 
 // Shutdown turns down the grpc-fallback HTTP server.
