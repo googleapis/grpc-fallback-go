@@ -65,7 +65,8 @@ func prepareHeaders(ctx context.Context, hdr http.Header) context.Context {
 	// delete application/x-protobuf content-type
 	hdr.Del("content-type")
 
-	// keep every other header
+	// keep every other headerin case-sensitive
+	// way, important for copying e.g. Authorization
 	for key, val := range hdr {
 		out[key] = append(out[key], val...)
 	}

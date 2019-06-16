@@ -18,7 +18,13 @@ import (
 type FallbackServer struct {
 	backend string
 	server  http.Server
-	cc      *grpc.ClientConn
+	cc      connection //*grpc.ClientConn
+}
+
+// connection is an abstraction around the grpc.ClientConn
+// to make testing easier.
+type connection interface {
+	Invoke(ctx context.Context, method string, args, reply interface{}, opts ...grpc.CallOption) error
 }
 
 // NewServer creates a new grpc-fallback HTTP server on the
@@ -66,8 +72,7 @@ func (f *FallbackServer) StartBackground() {
 
 // Shutdown turns down the grpc-fallback HTTP server.
 func (f *FallbackServer) Shutdown() {
-	err := f.server.Shutdown(context.Background())
-	if err != nil {
+	if err := f.server.Shutdown(context.Background()); err != nil {
 		log.Println("Error shutting down fallback server:", err)
 	}
 }
@@ -103,9 +108,7 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 // dial creates a connection with the gRPC service backend.
-//
-// TODO(ndietz) backend auth support
-func (f *FallbackServer) dial() (*grpc.ClientConn, error) {
+func (f *FallbackServer) dial() (connection, error) {
 	opts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.ForceCodec(fallbackCodec{})),
 	}

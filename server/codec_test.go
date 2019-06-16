@@ -11,7 +11,6 @@ import (
 func Test_fallbackCodec_Name(t *testing.T) {
 	tests := []struct {
 		name string
-		f    fallbackCodec
 		want string
 	}{
 		{name: "basic", want: "fallback"},
@@ -45,11 +44,10 @@ func Test_fallbackCodec_Unmarshal(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		f       fallbackCodec
 		args    args
 		wantErr bool
 	}{
-		{name: "basic", wantErr: false, args: args{data: []byte("test"), v: &testWriter{buf: bytes.NewBuffer([]byte{})}}},
+		{name: "basic", args: args{data: []byte("test"), v: &testWriter{buf: bytes.NewBuffer([]byte{})}}},
 		{name: "error", wantErr: true, args: args{data: []byte{}, v: &testWriter{err: fmt.Errorf("error"), buf: bytes.NewBuffer([]byte{})}}},
 	}
 	for _, tt := range tests {
@@ -87,12 +85,11 @@ func Test_fallbackCodec_Marshal(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		f       fallbackCodec
 		args    args
 		want    []byte
 		wantErr bool
 	}{
-		{name: "basic", wantErr: false, want: []byte("test"), args: args{v: &testReader{buf: []byte("test")}}},
+		{name: "basic", want: []byte("test"), args: args{v: &testReader{buf: []byte("test")}}},
 		{name: "error", wantErr: true, want: []byte{}, args: args{v: &testReader{err: fmt.Errorf("error"), buf: []byte{}}}},
 	}
 	for _, tt := range tests {
