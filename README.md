@@ -191,5 +191,5 @@ If you are planning to contribute to `grpc-fallback-go`, please read the [CONTRI
 
 This is not an official Google product.
 
-[contributing.md]: /CONTRIBUTING.MD
+[contributing.md]: /CONTRIBUTING.md
 [grpc fallback]: https://googleapis.github.io/HowToRPC#grpc-fallback-experimental
