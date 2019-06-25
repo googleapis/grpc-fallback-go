@@ -53,6 +53,9 @@ func Test_prepareHeaders(t *testing.T) {
 	parent := context.Background()
 	hdr := make(http.Header)
 	hdr.Add("Content-Type", "test")
+	hdr.Add("accept-encoding", "blah")
+	hdr.Add("content-length", "7")
+	hdr.Add("user-agent", "whoever")
 	hdr.Add("Foo", "bar")
 
 	want := map[string][]string{

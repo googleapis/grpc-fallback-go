@@ -79,6 +79,11 @@ func prepareHeaders(ctx context.Context, hdr http.Header) context.Context {
 	// delete application/x-protobuf content-type
 	hdr.Del("content-type")
 
+	// delete headers that make gRPC upset
+	hdr.Del("user-agent")
+	hdr.Del("content-length")
+	hdr.Del("accept-encoding")
+
 	// keep every other headerin case-sensitive
 	// way, important for copying e.g. Authorization
 	for key, val := range hdr {
