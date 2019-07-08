@@ -85,10 +85,15 @@ func (c *testConnection) Invoke(ctx context.Context, method string, args, reply 
 type testRespWriter struct {
 	buf  []byte
 	code int
+	h    http.Header
 }
 
 func (w *testRespWriter) Header() http.Header {
-	return nil
+	if w.h == nil {
+		w.h = make(http.Header)
+	}
+
+	return w.h
 }
 
 func (w *testRespWriter) Write(b []byte) (int, error) {
@@ -181,6 +186,10 @@ func TestFallbackServer_handler(t *testing.T) {
 
 			if !reflect.DeepEqual(resp.buf, tt.wantBody) {
 				t.Errorf("handler() %s: got = %s, want = %s", tt.name, resp.buf, tt.wantBody)
+			}
+
+			if cors := resp.Header().Get("Access-Control-Allow-Origin"); cors != "*" {
+				t.Errorf("handler() %s: got = %s, want = %s", tt.name, cors, "*")
 			}
 		})
 	}
