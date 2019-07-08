@@ -89,6 +89,10 @@ type testRespWriter struct {
 }
 
 func (w *testRespWriter) Header() http.Header {
+	if w.h == nil {
+		w.h = make(http.Header)
+	}
+
 	return w.h
 }
 
@@ -126,7 +130,7 @@ func TestFallbackServer_handler(t *testing.T) {
 			name: "basic",
 			args: args{
 				r: req,
-				w: &testRespWriter{h: make(http.Header)},
+				w: &testRespWriter{},
 			},
 			fields: fields{
 				cc: &testConnection{},
@@ -136,7 +140,7 @@ func TestFallbackServer_handler(t *testing.T) {
 			name: "random error",
 			args: args{
 				r: req,
-				w: &testRespWriter{h: make(http.Header)},
+				w: &testRespWriter{},
 			},
 			fields: fields{
 				cc: &testConnection{
@@ -151,7 +155,7 @@ func TestFallbackServer_handler(t *testing.T) {
 			name: "gRPC error status",
 			args: args{
 				r: req,
-				w: &testRespWriter{h: make(http.Header)},
+				w: &testRespWriter{},
 			},
 			fields: fields{
 				cc: &testConnection{
