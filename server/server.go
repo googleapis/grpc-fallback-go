@@ -107,6 +107,9 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 	// copy headers into out-going context metadata
 	ctx := prepareHeaders(context.Background(), r.Header)
 
+	// preemptively allow all origins in response
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	// invoke the RPC, supplying the request body
 	// and response writer directly
 	err := f.cc.Invoke(ctx, m, r.Body, w)
