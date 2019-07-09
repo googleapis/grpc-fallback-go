@@ -123,6 +123,7 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 			b, _ = proto.Marshal(st.Proto())
 		}
 
+		log.Println(err)
 		w.WriteHeader(code)
 		w.Write(b)
 	}

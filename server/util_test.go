@@ -56,10 +56,12 @@ func Test_prepareHeaders(t *testing.T) {
 	hdr.Add("accept-encoding", "blah")
 	hdr.Add("content-length", "7")
 	hdr.Add("user-agent", "whoever")
-	hdr.Add("Foo", "bar")
+	hdr.Add("Authorization", "Bearer foo")
+	hdr.Add("x-goog-api-key", "bar")
 
 	want := map[string][]string{
-		"Foo": []string{"bar"},
+		"Authorization":  []string{"Bearer foo"},
+		"x-goog-api-key": []string{"bar"},
 	}
 
 	tests := []struct {

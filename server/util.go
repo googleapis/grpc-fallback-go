@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -73,21 +74,21 @@ func buildMethod(service, method string) string {
 }
 
 func prepareHeaders(ctx context.Context, hdr http.Header) context.Context {
-	out, _ := metadata.FromOutgoingContext(ctx)
-	out = out.Copy()
+	out, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		out = metadata.MD{}
+	}
 
-	// delete application/x-protobuf content-type
-	hdr.Del("content-type")
+	// copy Authorization header
+	if auth := hdr.Get("Authorization"); auth != "" {
+		out["Authorization"] = append([]string{}, auth)
+	}
 
-	// delete headers that make gRPC upset
-	hdr.Del("user-agent")
-	hdr.Del("content-length")
-	hdr.Del("accept-encoding")
-
-	// keep every other headerin case-sensitive
-	// way, important for copying e.g. Authorization
+	// keep x-goog-* headers
 	for key, val := range hdr {
-		out[key] = append(out[key], val...)
+		if strings.HasPrefix(strings.ToLower(key), "x-goog-") {
+			out.Set(key, val...)
+		}
 	}
 
 	return metadata.NewOutgoingContext(ctx, out)
