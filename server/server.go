@@ -28,6 +28,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const fallbackPath = "/$rpc/{service:[.a-zA-Z0-9]+}/{method:[a-zA-Z]+}"
+
 // FallbackServer is a grpc-fallback HTTP server.
 type FallbackServer struct {
 	backend string
@@ -84,7 +86,10 @@ func (f *FallbackServer) preStart() {
 
 	// setup grpc-fallback complient router
 	r := mux.NewRouter()
-	r.HandleFunc("/$rpc/{service:[.a-zA-Z0-9]+}/{method:[a-zA-Z]+}", f.handler).Headers("Content-Type", "application/x-protobuf")
+	r.HandleFunc(fallbackPath, f.options).
+		Methods(http.MethodOptions)
+	r.HandleFunc(fallbackPath, f.handler).
+		Headers("Content-Type", "application/x-protobuf")
 	f.server.Handler = r
 }
 
@@ -143,4 +148,14 @@ func (f *FallbackServer) dial() (connection, error) {
 	opts = append(opts, auth)
 
 	return grpc.Dial(f.backend, opts...)
+}
+
+// options is a handler for the OPTIONS call that precedes CORS-enabled calls.
+func (f *FallbackServer) options(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("access-control-allow-credentials", "true")
+	w.Header().Add("access-control-allow-headers", "*")
+	w.Header().Add("access-control-allow-methods", http.MethodPost)
+	w.Header().Add("access-control-allow-origin", "*")
+	w.Header().Add("access-control-max-age", "3600")
+	w.WriteHeader(http.StatusOK)
 }
