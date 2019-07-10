@@ -249,3 +249,62 @@ func TestFallbackServer_preStart(t *testing.T) {
 		})
 	}
 }
+
+func TestFallbackServer_options(t *testing.T) {
+	type fields struct {
+		backend string
+		server  http.Server
+		cc      connection
+	}
+	type args struct {
+		w http.ResponseWriter
+		r *http.Request
+	}
+
+	req, _ := http.NewRequest("OPTIONS", "/test", nil)
+	hdr := make(http.Header)
+	hdr.Add("access-control-allow-credentials", "true")
+	hdr.Add("access-control-allow-headers", "*")
+	hdr.Add("access-control-allow-methods", http.MethodPost)
+	hdr.Add("access-control-allow-origin", "*")
+	hdr.Add("access-control-max-age", "3600")
+
+	tests := []struct {
+		name       string
+		fields     fields
+		args       args
+		wantHeader http.Header
+	}{
+		{
+			name: "basic",
+			args: args{
+				r: req,
+				w: &testRespWriter{},
+			},
+			fields: fields{
+				cc: &testConnection{},
+			},
+			wantHeader: hdr,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := &FallbackServer{
+				backend: tt.fields.backend,
+				server:  tt.fields.server,
+				cc:      tt.fields.cc,
+			}
+			f.options(tt.args.w, tt.args.r)
+
+			resp := tt.args.w.(*testRespWriter)
+
+			if resp.code != http.StatusOK {
+				t.Errorf("handler() %s: got = %d, want = %d", tt.name, resp.code, http.StatusOK)
+			}
+
+			if !reflect.DeepEqual(resp.Header(), tt.wantHeader) {
+				t.Errorf("handler() %s: got = %s, want = %s", tt.name, resp.Header(), tt.wantHeader)
+			}
+		})
+	}
+}
