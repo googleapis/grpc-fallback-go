@@ -81,7 +81,7 @@ func prepareHeaders(ctx context.Context, hdr http.Header) context.Context {
 
 	// copy Authorization header
 	if auth := hdr.Get("Authorization"); auth != "" {
-		out["Authorization"] = append([]string{}, auth)
+		out.Set("authorization", auth)
 	}
 
 	// keep x-goog-* headers

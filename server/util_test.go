@@ -60,7 +60,7 @@ func Test_prepareHeaders(t *testing.T) {
 	hdr.Add("x-goog-api-key", "bar")
 
 	want := map[string][]string{
-		"Authorization":  []string{"Bearer foo"},
+		"authorization":  []string{"Bearer foo"},
 		"x-goog-api-key": []string{"bar"},
 	}
 

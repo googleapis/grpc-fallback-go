@@ -128,7 +128,7 @@ func (f *FallbackServer) handler(w http.ResponseWriter, r *http.Request) {
 			b, _ = proto.Marshal(st.Proto())
 		}
 
-		log.Println(err)
+		log.Println("Error handling request:", r.RequestURI, "-", err)
 		w.WriteHeader(code)
 		w.Write(b)
 	}
@@ -152,6 +152,7 @@ func (f *FallbackServer) dial() (connection, error) {
 
 // options is a handler for the OPTIONS call that precedes CORS-enabled calls.
 func (f *FallbackServer) options(w http.ResponseWriter, r *http.Request) {
+	log.Println("Incoming OPTIONS for request:", r.RequestURI)
 	w.Header().Add("access-control-allow-credentials", "true")
 	w.Header().Add("access-control-allow-headers", "*")
 	w.Header().Add("access-control-allow-methods", http.MethodPost)
