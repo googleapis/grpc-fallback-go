@@ -16,7 +16,7 @@
 
 set -e
 
-VERSION=0.1.2
+VERSION=0.1.3
 GO111MODULE=on
 GOPROXY=https://proxy.golang.org
 
