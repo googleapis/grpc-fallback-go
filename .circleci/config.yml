@@ -1,0 +1,28 @@
+version: 2
+workflows:
+  version: 2
+  test_publish:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+$|^v\d+\.\d+\.\d+-[a-z]+$/
+      - format:
+          filters:
+            tags:
+              only: /^v\d+\.\d+\.\d+$|^v\d+\.\d+\.\d+-[a-z]+$/
+jobs:
+  format:
+    docker:
+      - image: circleci/golang:1.13
+    steps:
+      - checkout
+      - run:
+          name: Check Format
+          command: "! go fmt ./... 2>&1 | read"
+  test:
+    docker:
+      - image: circleci/golang:1.13
+    steps:
+      - checkout
+      - run: go test -mod=readonly ./...
