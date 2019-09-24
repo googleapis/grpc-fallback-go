@@ -116,13 +116,14 @@ import (
 
 	"github.com/googleapis/grpc-fallback-go/client"
 
-	lpb "google.golang.org/genproto/googleapis/cloud/language/v1"
 	"golang.org/x/oauth2/google"
+	lpb "google.golang.org/genproto/googleapis/cloud/language/v1"
 )
 
 func main() {
 	hdr := make(http.Header)
-	ts, _ := google.DefaultTokenSource(context.Background(), "https://www.googleapis.com/auth/cloud-platform")
+	ts, _ := google.DefaultTokenSource(context.Background(),
+		"https://www.googleapis.com/auth/cloud-platform")
 	t, _ := ts.Token()
 	hdr.Add("Authorization", "Bearer "+t.AccessToken)
 
@@ -132,19 +133,38 @@ func main() {
 			Source: &lpb.Document_Content{"hello, world"},
 		},
 	}
-	res := &lpb.AnalyzeSentimentResponse{}
-	
 
-	// fallback-proxy is pointing at -address language.googleapis.com:443
-	err := client.Do("http://localhost:1337", "google.cloud.language.v1.LanguageService", "AnalyzeSentiment", req, res, hdr)
-	if err != nil {
-		fmt.Println(err)
-		return
+	{
+		// Here we use fallback-proxy to call a production Google service.
+		// This expects that fallback-proxy has been started with the following command:
+		//   fallback-proxy -address language.googleapis.com:443
+		fmt.Println("\nCalling sentiment analysis using fallback-proxy...")
+		res := &lpb.AnalyzeSentimentResponse{}
+		err := client.Do("http://localhost:1337",
+			"google.cloud.language.v1.LanguageService",
+			"AnalyzeSentiment", req, res, hdr)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(res)
+		}
 	}
 
-	fmt.Println(res)
+	{
+		// The service we just called is also directly available using grpc-fallback.
+		// Here, for comparison, we call it directly.
+		fmt.Println("\nCalling sentiment analysis directly with grpc-fallback...")
+		res := &lpb.AnalyzeSentimentResponse{}
+		err := client.Do("https://language.googleapis.com:443",
+			"google.cloud.language.v1.LanguageService",
+			"AnalyzeSentiment", req, res, hdr)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(res)
+		}
+	}
 }
-
 ```
 
 ## Testing
