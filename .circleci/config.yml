@@ -3,14 +3,8 @@ workflows:
   version: 2
   test_publish:
     jobs:
-      - test:
-          filters:
-            tags:
-              only: /^v\d+\.\d+\.\d+$|^v\d+\.\d+\.\d+-[a-z]+$/
-      - format:
-          filters:
-            tags:
-              only: /^v\d+\.\d+\.\d+$|^v\d+\.\d+\.\d+-[a-z]+$/
+      - format
+      - test
 jobs:
   format:
     docker:
