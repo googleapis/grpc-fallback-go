@@ -5,6 +5,6 @@ go 1.13
 require (
 	github.com/golang/protobuf v1.3.2
 	github.com/gorilla/mux v1.7.3
-	google.golang.org/genproto v0.0.0-20200113173426-e1de0a7b01eb
+	google.golang.org/genproto v0.0.0-20200115191322-ca5a22157cba
 	google.golang.org/grpc v1.26.0
 )
