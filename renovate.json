@@ -5,7 +5,7 @@
   "golang": {
     "postUpdateOptions": ["gomodTidy"]
   },
-  "assignees": [
+  "reviewers": [
     "noahdietz"
   ],
   "rebaseWhen": "behind-base-branch",
