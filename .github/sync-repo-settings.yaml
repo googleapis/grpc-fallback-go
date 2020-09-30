@@ -1,0 +1,18 @@
+rebaseMergeAllowed: true
+squashMergeAllowed: true
+mergeCommitAllowed: false
+branchProtectionRules:
+- pattern: master
+  isAdminEnforced: true
+  requiredStatusCheckContexts:
+    - 'ci/circleci: format'
+    - 'ci/circleci: test'
+    - 'cla/google'
+  requiredApprovingReviewCount: 1
+  requiresCodeOwnerReviews: true
+  requiresStrictStatusChecks: true
+permissionRules:
+  - team: actools
+    permission: admin
+  - team: yoshi-go
+    permission: push
