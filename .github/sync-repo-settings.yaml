@@ -16,3 +16,5 @@ permissionRules:
     permission: admin
   - team: yoshi-go
     permission: push
+  - team: actools-go
+    permission: push
