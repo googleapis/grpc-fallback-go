@@ -56,7 +56,7 @@ jobs:
         with:
           go-version: "1.13"
       - uses: actions/checkout@v2
-      # The generator does not use these,  but we need them to build the
+      # This project does not use these,  but we need them to build the
       # binaries.
       #
       # Mousetrap is installed individually because it is needed for the
