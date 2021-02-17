@@ -56,8 +56,8 @@ jobs:
         with:
           go-version: "1.13"
       - uses: actions/checkout@v2
-      # This project does not use these,  but we need them to build the
-      # binaries.
+      # This project does not use these as Go deps,  but we need them to build
+      # the binaries.
       #
       # Mousetrap is installed individually because it is needed for the
       # Windows build. Since we are building on Linux, it is not installed

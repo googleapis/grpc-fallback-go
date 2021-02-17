@@ -173,8 +173,9 @@ If developing the `grpc-fallback-go` project, run tests via `make test`.
 
 ##  Releasing
 
-Create a new tag with the form `vX.Y.Z` and push it `git push --tags`. GitHub
-Actions will create the release and the appropriate assets.
+To make a release, create a new tag with the form `vX.Y.Z` and push it using
+`git push --tags`. GitHub Actions will create the release and the appropriate
+assets.
 
 ## Contributing
 
