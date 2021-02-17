@@ -173,35 +173,9 @@ If developing the `grpc-fallback-go` project, run tests via `make test`.
 
 ##  Releasing
 
-Follow these steps to make a release:
-
-1. Update the `VERSION` in [release.sh](/release.sh)
-2. Open a PR with the **only** `VERSION` bump (notice the prepended `v` for the tag name)
-```sh
-git add release.sh
-git commit -m "release v$VERSION"
-```
-3. Once version bump PR is merged, create and push the version tag (notice the prepended `v` for the tag name)
-```sh
-git tag v$VERSION && git push --tags
-```
-4. Build release assets (Note: must have Docker running for image building)
-```sh
-make release
-```
-5. Publish release with `VERSION` tag.   
-    a. include the `grpc-fallback-go-*.tar.gz ` release assets
-
-    b. push the `latest` and `VERSION` tagged Docker images (requires credentials)
-  ```sh
-  gcloud auth configure-docker
-  gcloud docker -- push gcr.io/gapic-images/fallback-proxy
-  gcloud docker -- push gcr.io/gapic-images/fallback-proxy:$VERSION
-  ```
-6. (optional) Clean up!
-```sh
-make clean
-```
+To make a release, create a new tag with the form `vX.Y.Z` and push it using
+`git push --tags`. GitHub Actions will create the release and the appropriate
+assets.
 
 ## Contributing
 

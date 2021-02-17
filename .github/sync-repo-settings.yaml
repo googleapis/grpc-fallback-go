@@ -5,8 +5,7 @@ branchProtectionRules:
 - pattern: master
   isAdminEnforced: true
   requiredStatusCheckContexts:
-    - 'ci/circleci: format'
-    - 'ci/circleci: test'
+    - 'unit-tests'
     - 'cla/google'
   requiredApprovingReviewCount: 1
   requiresCodeOwnerReviews: true
