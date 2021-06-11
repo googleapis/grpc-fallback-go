@@ -14,8 +14,5 @@ install:
 	go install ./server
 	go install ./cmd/fallback-proxy
 
-release:
-	./release.sh
-
 test:
 	go test ./...
