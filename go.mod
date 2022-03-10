@@ -6,5 +6,5 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
 	google.golang.org/genproto v0.0.0-20220307174427-659dce7fcb03
-	google.golang.org/grpc v1.44.0
+	google.golang.org/grpc v1.45.0
 )
