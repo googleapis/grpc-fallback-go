@@ -1,6 +1,6 @@
 module github.com/googleapis/grpc-fallback-go
 
-go 1.13
+go 1.19
 
 require (
 	github.com/golang/protobuf v1.5.2
